@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: stratus-db
+    environment:
+      POSTGRES_USER: stratus
+      POSTGRES_PASSWORD: stratus
+      POSTGRES_DB: stratus
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - stratus-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stratus"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: stratus-backend
+    environment:
+      DATABASE_URL: postgres://stratus:stratus@postgres:5432/stratus?sslmode=disable
+      SERVER_PORT: "8080"
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      STORAGE_PATH: /data/storage
+      ADMIN_PASSWORD: admin123
+    volumes:
+      - storage_data:/data/storage
+    networks:
+      - stratus-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: stratus-frontend
+    ports:
+      - "80:80"
+    networks:
+      - stratus-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  stratus-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  storage_data:
