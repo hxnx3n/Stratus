@@ -64,7 +64,6 @@ func createInitialAdmin() {
 		}
 
 		admin := models.User{
-			Username:    "admin",
 			Email:       "admin@stratus.local",
 			DisplayName: "Administrator",
 			IsAdmin:     true,

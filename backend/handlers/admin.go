@@ -56,11 +56,10 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	}
 
 	var req struct {
-		DisplayName string `json:"display_name"`
-		Email       string `json:"email"`
-		Quota       *int64 `json:"quota"`
-		IsActive    *bool  `json:"is_active"`
-		IsAdmin     *bool  `json:"is_admin"`
+		Email    string `json:"email"`
+		Quota    *int64 `json:"quota"`
+		IsActive *bool  `json:"is_active"`
+		IsAdmin  *bool  `json:"is_admin"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -69,9 +68,6 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	}
 
 	updates := make(map[string]interface{})
-	if req.DisplayName != "" {
-		updates["display_name"] = req.DisplayName
-	}
 	if req.Email != "" {
 		updates["email"] = req.Email
 	}

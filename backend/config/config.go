@@ -18,7 +18,7 @@ func Load() *Config {
 		DatabaseURL:   getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/stratus?sslmode=disable"),
 		JWTSecret:     getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
 		StoragePath:   getEnv("STORAGE_PATH", "./storage"),
-		MaxUploadSize: 1024 * 1024 * 1024,
+		MaxUploadSize: 1024 * 1024 * 1024 * 1024 * 1024,
 	}
 }
 

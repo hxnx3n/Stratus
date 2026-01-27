@@ -23,10 +23,8 @@ func NewAuthHandler(cfg *config.Config) *AuthHandler {
 }
 
 type RegisterRequest struct {
-	Username    string `json:"username" binding:"required,min=3,max=100"`
-	Email       string `json:"email" binding:"required,email"`
-	Password    string `json:"password" binding:"required,min=8"`
-	DisplayName string `json:"display_name"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=8"`
 }
 
 type LoginRequest struct {
@@ -49,10 +47,6 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	var existingUser models.User
-	if err := database.DB.Where("username = ?", req.Username).First(&existingUser).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
-		return
-	}
 
 	if err := database.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "Email already exists"})
@@ -60,13 +54,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	user := models.User{
-		Username:    req.Username,
-		Email:       req.Email,
-		DisplayName: req.DisplayName,
-	}
-
-	if user.DisplayName == "" {
-		user.DisplayName = user.Username
+		Email: req.Email,
 	}
 
 	if err := user.SetPassword(req.Password); err != nil {
@@ -187,8 +175,7 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 	}
 
 	var req struct {
-		DisplayName string `json:"display_name"`
-		Email       string `json:"email" binding:"omitempty,email"`
+		Email string `json:"email" binding:"omitempty,email"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -197,9 +184,6 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 	}
 
 	updates := make(map[string]interface{})
-	if req.DisplayName != "" {
-		updates["display_name"] = req.DisplayName
-	}
 	if req.Email != "" {
 		updates["email"] = req.Email
 	}
