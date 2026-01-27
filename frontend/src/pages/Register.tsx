@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
-import { Cloud, Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-react'
+import { Cloud, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react'
 import { AxiosError } from 'axios'
 
 interface ApiError {
@@ -12,7 +12,6 @@ export default function Register() {
   const navigate = useNavigate()
   const { register } = useAuthStore()
   const [email, setEmail] = useState('')
-  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
@@ -36,7 +35,7 @@ export default function Register() {
     setLoading(true)
 
     try {
-      await register(email, username, password)
+      await register(email, password)
       setSuccess(true)
       setTimeout(() => navigate('/login'), 2000)
     } catch (err) {
@@ -86,23 +85,6 @@ export default function Register() {
                 required
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="your@email.com"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              사용자명
-            </label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="사용자명"
               />
             </div>
           </div>

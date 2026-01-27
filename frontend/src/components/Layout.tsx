@@ -67,10 +67,9 @@ export default function Layout() {
                   to={item.to}
                   title={collapsed ? item.label : undefined}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
-                      isActive
-                        ? 'bg-primary-100 text-primary-700'
-                        : 'text-gray-600 hover:bg-gray-100'
+                    `flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${isActive
+                      ? 'bg-primary-100 text-primary-700'
+                      : 'text-gray-600 hover:bg-gray-100'
                     } ${collapsed ? 'justify-center px-2' : ''}`
                   }
                 >
@@ -91,13 +90,12 @@ export default function Layout() {
               </div>
               <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                 <div
-                  className={`h-full transition-all duration-300 ${
-                    storagePercent > 90
+                  className={`h-full transition-all duration-300 ${storagePercent > 90
                       ? 'bg-red-500'
                       : storagePercent > 70
-                      ? 'bg-yellow-500'
-                      : 'bg-primary-500'
-                  }`}
+                        ? 'bg-yellow-500'
+                        : 'bg-primary-500'
+                    }`}
                   style={{ width: `${storagePercent}%` }}
                 />
               </div>

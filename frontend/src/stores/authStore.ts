@@ -5,7 +5,6 @@ import { api } from '../lib/api'
 interface User {
   id: string
   email: string
-  username: string
   is_admin: boolean
   storage_quota: number
   storage_used: number
@@ -16,7 +15,7 @@ interface AuthState {
   user: User | null
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (email: string, username: string, password: string) => Promise<void>
+  register: (email: string, password: string) => Promise<void>
   logout: () => void
   fetchUser: () => Promise<void>
 }
@@ -35,8 +34,8 @@ export const useAuthStore = create<AuthState>()(
         api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
       },
 
-      register: async (email: string, username: string, password: string) => {
-        await api.post('/api/auth/register', { email, username, password })
+      register: async (email: string, password: string) => {
+        await api.post('/api/auth/register', { email, password })
       },
 
       logout: () => {

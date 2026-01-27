@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useAuthStore } from '../stores/authStore'
 import { api } from '../lib/api'
 import { formatBytes } from '../lib/utils'
-import { Settings as SettingsIcon, User, HardDrive, Key, Save, Check } from 'lucide-react'
+import { Settings as SettingsIcon, User, HardDrive, Key, Check } from 'lucide-react'
 import { AxiosError } from 'axios'
 
 interface ApiError {
@@ -10,36 +10,12 @@ interface ApiError {
 }
 
 export default function Settings() {
-  const { user, fetchUser } = useAuthStore()
-  const [username, setUsername] = useState(user?.username || '')
+  const { user } = useAuthStore()
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-
-  useEffect(() => {
-    if (user) {
-      setUsername(user.username)
-    }
-  }, [user])
-
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setMessage(null)
-
-    try {
-      await api.put('/api/auth/profile', { username })
-      await fetchUser()
-      setMessage({ type: 'success', text: '프로필이 업데이트되었습니다.' })
-    } catch (error) {
-      const axiosError = error as AxiosError<ApiError>
-      setMessage({ type: 'error', text: axiosError.response?.data?.error || '업데이트 실패' })
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -128,40 +104,14 @@ export default function Settings() {
             <h2 className="text-lg font-semibold">프로필</h2>
           </div>
 
-          <form onSubmit={handleUpdateProfile} className="space-y-4">
+          <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                이메일
-              </label>
-              <input
-                type="email"
-                value={user?.email || ''}
-                disabled
-                className="w-full px-4 py-2 border rounded-lg bg-gray-100 text-gray-500"
-              />
+              <p className="text-sm font-medium text-gray-700 mb-1">이메일</p>
+              <p className="px-4 py-2 border rounded-lg bg-gray-100 text-gray-700">
+                {user?.email || '-'}
+              </p>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                사용자명
-              </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-            >
-              <Save className="w-4 h-4" />
-              <span>저장</span>
-            </button>
-          </form>
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
