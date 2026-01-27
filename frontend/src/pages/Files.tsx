@@ -25,7 +25,7 @@ export default function Files() {
 
   useEffect(() => {
     fetchFiles(pathFromUrl)
-  }, [pathFromUrl])
+  }, [pathFromUrl]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNavigate = (file: FileItem) => {
     if (file.is_directory) {

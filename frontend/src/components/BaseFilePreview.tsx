@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { X, Download, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { formatBytes } from '../lib/utils'
+import { getPreviewCategory } from '../lib/preview'
 
 export interface PreviewFile {
   id: string
@@ -23,21 +24,6 @@ export interface BaseFilePreviewProps<T extends PreviewFile> {
   error: string | null
 }
 
-export type PreviewCategory = 'image' | 'video' | 'audio' | 'pdf' | 'text' | 'none'
-
-export const getPreviewCategory = (mimeType: string): PreviewCategory => {
-  if (!mimeType) return 'none'
-  if (mimeType.startsWith('image/')) return 'image'
-  if (mimeType.startsWith('video/')) return 'video'
-  if (mimeType.startsWith('audio/')) return 'audio'
-  if (mimeType === 'application/pdf') return 'pdf'
-  if (mimeType.startsWith('text/') ||
-    mimeType === 'application/json' ||
-    mimeType === 'application/javascript' ||
-    mimeType === 'application/xml') return 'text'
-  return 'none'
-}
-
 export default function BaseFilePreview<T extends PreviewFile>({
   file,
   files = [],
@@ -53,7 +39,6 @@ export default function BaseFilePreview<T extends PreviewFile>({
   const category = getPreviewCategory(file.mime_type)
   const canPreview = category !== 'none'
 
-  // Filter previewable files
   const previewableFiles = files.filter(f => !f.is_directory && getPreviewCategory(f.mime_type) !== 'none')
   const currentIndex = previewableFiles.findIndex(f => f.id === file.id)
   const hasPrev = currentIndex > 0
@@ -77,7 +62,6 @@ export default function BaseFilePreview<T extends PreviewFile>({
     }
   }
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
