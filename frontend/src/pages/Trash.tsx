@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { formatBytes } from '../lib/utils'
 import { format } from 'date-fns'
@@ -20,6 +21,7 @@ interface TrashItem {
 }
 
 export default function Trash() {
+  const { t } = useTranslation()
   const [items, setItems] = useState<TrashItem[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
@@ -61,7 +63,7 @@ export default function Trash() {
       await fetchTrash()
     } catch (error) {
       const axiosError = error as AxiosError<ApiError>
-      alert(axiosError.response?.data?.error || '복원 실패')
+      alert(axiosError.response?.data?.error || t('trash.errors.restore_failed'))
     }
   }
 
@@ -73,7 +75,7 @@ export default function Trash() {
       await fetchTrash()
     } catch (error) {
       const axiosError = error as AxiosError<ApiError>
-      alert(axiosError.response?.data?.error || '삭제 실패')
+      alert(axiosError.response?.data?.error || t('trash.errors.deletion_failed'))
     }
   }
 
@@ -89,7 +91,7 @@ export default function Trash() {
       await fetchTrash()
     } catch (error) {
       const axiosError = error as AxiosError<ApiError>
-      alert(axiosError.response?.data?.error || '휴지통 비우기 실패')
+      alert(axiosError.response?.data?.error || t('trash.errors.empty_trash_failed'))
     }
   }
 
@@ -109,7 +111,7 @@ export default function Trash() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Trash2 className="w-6 h-6 text-red-500" />
-            <h1 className="text-2xl font-bold text-gray-900">휴지통</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('trash.title')}</h1>
           </div>
           {items.length > 0 && (
             <button
@@ -117,7 +119,7 @@ export default function Trash() {
               className="flex items-center gap-2 px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50"
             >
               <Trash2 className="w-4 h-4" />
-              <span>휴지통 비우기</span>
+              <span>{t('trash.empty_button')}</span>
             </button>
           )}
         </div>
@@ -131,21 +133,21 @@ export default function Trash() {
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-gray-500">
             <Trash2 className="w-16 h-16 mb-4 text-gray-300" />
-            <p>휴지통이 비어있습니다</p>
+            <p>{t('trash.empty_message')}</p>
           </div>
         ) : (
           <>
             <div className="px-6 py-3 bg-yellow-50 border-b flex items-center gap-2 text-yellow-800">
               <AlertTriangle className="w-4 h-4" />
-              <span className="text-sm">휴지통의 항목은 30일 후 자동으로 삭제됩니다.</span>
+              <span className="text-sm">{t('trash.warning_message')}</span>
             </div>
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
                   <th className="w-8 px-4 py-3"></th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">이름</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 w-32">크기</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 w-40">삭제일</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">{t('trash.table.name')}</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 w-32">{t('trash.table.size')}</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 w-40">{t('trash.table.deleted')}</th>
                   <th className="px-4 py-3 w-24"></th>
                 </tr>
               </thead>
@@ -185,14 +187,14 @@ export default function Trash() {
                         <button
                           onClick={() => handleRestore(item.id)}
                           className="p-2 hover:bg-gray-200 rounded"
-                          title="복원"
+                          title={t('trash.actions.restore')}
                         >
                           <RotateCcw className="w-4 h-4 text-gray-500" />
                         </button>
                         <button
                           onClick={() => setDeleteDialog({ isOpen: true, item })}
                           className="p-2 hover:bg-gray-200 rounded"
-                          title="영구 삭제"
+                          title={t('trash.actions.permanent_delete')}
                         >
                           <Trash2 className="w-4 h-4 text-red-500" />
                         </button>
@@ -207,10 +209,10 @@ export default function Trash() {
       </div>
       <ConfirmDialog
         isOpen={deleteDialog.isOpen}
-        title="영구 삭제"
-        message={`"${deleteDialog.item?.name}"을(를) 영구적으로 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`}
-        confirmText="삭제"
-        cancelText="취소"
+        title={t('trash.dialogs.permanent_delete_title')}
+        message={t('trash.dialogs.permanent_delete_message', { name: deleteDialog.item?.name })}
+        confirmText={t('trash.dialogs.delete_button')}
+        cancelText={t('trash.dialogs.cancel_button')}
         variant="danger"
         onConfirm={() => deleteDialog.item && handleDelete(deleteDialog.item.id)}
         onCancel={() => setDeleteDialog({ isOpen: false })}
@@ -218,10 +220,10 @@ export default function Trash() {
 
       <ConfirmDialog
         isOpen={emptyTrashDialog}
-        title="휴지통 비우기"
-        message="휴지통의 모든 항목을 영구적으로 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
-        confirmText="비우기"
-        cancelText="취소"
+        title={t('trash.dialogs.empty_trash_title')}
+        message={t('trash.dialogs.empty_trash_message')}
+        confirmText={t('trash.dialogs.empty_button')}
+        cancelText={t('trash.dialogs.cancel_button')}
         variant="danger"
         onConfirm={handleEmptyTrash}
         onCancel={() => setEmptyTrashDialog(false)}
@@ -238,7 +240,7 @@ export default function Trash() {
             className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-100 text-left"
           >
             <RotateCcw className="w-4 h-4" />
-            <span>복원</span>
+            <span>{t('trash.actions.restore')}</span>
           </button>
           <hr className="my-1" />
           <button
@@ -249,7 +251,7 @@ export default function Trash() {
             className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-100 text-left text-red-600"
           >
             <Trash2 className="w-4 h-4" />
-            <span>영구 삭제</span>
+            <span>{t('trash.actions.delete_permanently')}</span>
           </button>
         </div>
       )}
