@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { FileItem } from '../stores/fileStore'
 import { api } from '../lib/api'
-import BaseFilePreview, { getPreviewCategory } from './BaseFilePreview'
+import BaseFilePreview from './BaseFilePreview'
+import { getPreviewCategory } from '../lib/preview'
 
 interface FilePreviewProps {
   file: FileItem
@@ -47,7 +48,7 @@ export default function FilePreview({
         setPreviewUrl(url)
       }
     } catch (err) {
-      setError('파일을 불러올 수 없습니다.')
+      setError('?�일??불러?????�습?�다.')
       console.error('Failed to load preview:', err)
     } finally {
       setIsLoading(false)
