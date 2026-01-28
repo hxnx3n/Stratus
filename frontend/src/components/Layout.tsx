@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../stores/authStore'
 import { formatBytes } from '../lib/utils'
+import LanguageSwitcher from './LanguageSwitcher'
 import {
   Cloud,
   Files,
@@ -15,6 +17,7 @@ import {
 } from 'lucide-react'
 
 export default function Layout() {
+  const { t } = useTranslation()
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
@@ -29,13 +32,13 @@ export default function Layout() {
   const storagePercent = Math.min((storageUsed / storageQuota) * 100, 100)
 
   const navItems = [
-    { to: '/files', icon: Files, label: '내 파일' },
-    { to: '/trash', icon: Trash2, label: '휴지통' },
-    { to: '/settings', icon: Settings, label: '설정' },
+    { to: '/files', icon: Files, label: t('nav.my_files') },
+    { to: '/trash', icon: Trash2, label: t('nav.trash') },
+    { to: '/settings', icon: Settings, label: t('nav.settings') },
   ]
 
   if (user?.is_admin) {
-    navItems.push({ to: '/admin', icon: Shield, label: '관리자' })
+    navItems.push({ to: '/admin', icon: Shield, label: t('nav.admin') })
   }
 
   return (
@@ -82,11 +85,12 @@ export default function Layout() {
         </nav>
 
         <div className={`p-4 border-t ${collapsed ? 'px-2' : ''}`}>
+          {!collapsed && <LanguageSwitcher />}
           {!collapsed && (
-            <div className="mb-4">
+            <div className="mb-4 mt-4">
               <div className="flex items-center gap-2 mb-2">
                 <HardDrive className="w-4 h-4 text-gray-500" />
-                <span className="text-sm font-medium text-gray-700">저장 공간</span>
+                <span className="text-sm font-medium text-gray-700">{t('layout.storage')}</span>
               </div>
               <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                 <div
@@ -100,18 +104,18 @@ export default function Layout() {
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                {formatBytes(storageUsed)} / {formatBytes(storageQuota)} 사용 중
+                {formatBytes(storageUsed)} / {formatBytes(storageQuota)} {t('layout.in_use')}
               </p>
             </div>
           )}
 
           <button
             onClick={handleLogout}
-            title={collapsed ? '로그아웃' : undefined}
+            title={collapsed ? t('layout.logout') : undefined}
             className={`flex items-center gap-2 w-full px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors ${collapsed ? 'justify-center px-2' : ''}`}
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
-            {!collapsed && <span>로그아웃</span>}
+            {!collapsed && <span>{t('layout.logout')}</span>}
           </button>
         </div>
       </aside>
