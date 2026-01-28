@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/xml"
 	"io"
-	"log"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -225,12 +224,6 @@ func (h *WebDAVHandler) Put(c *gin.Context) {
 	user := middleware.GetCurrentUser(c)
 	path := c.Param("path")
 
-	// Debug: log headers
-	log.Printf("PUT request - Content-Length: %s, Transfer-Encoding: %s, Expect: %s",
-		c.GetHeader("Content-Length"),
-		c.GetHeader("Transfer-Encoding"),
-		c.GetHeader("Expect"))
-
 	cleanPath := strings.TrimSuffix(path, "/")
 	pathParts := strings.Split(strings.TrimPrefix(cleanPath, "/"), "/")
 	fileName := pathParts[len(pathParts)-1]
@@ -241,25 +234,17 @@ func (h *WebDAVHandler) Put(c *gin.Context) {
 
 	bodyBytes, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		log.Printf("PUT error reading body: %v", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 	c.Request.Body.Close()
 
-	log.Printf("PUT actual body size: %d bytes", len(bodyBytes))
-
-	// If body is empty, just return success without creating file
-	// This handles Windows WebDAV clients that send empty PUT first
 	if len(bodyBytes) == 0 {
-		// Check if file already exists
 		var existingFile models.File
 		err = database.DB.Where("owner_id = ? AND path = ? AND name = ? AND is_trashed = false", user.ID, parentPath, fileName).First(&existingFile).Error
 		if err == nil {
-			// File exists, return 204
 			c.Status(http.StatusNoContent)
 		} else {
-			// File doesn't exist, return 201 but don't create
 			c.Status(http.StatusCreated)
 		}
 		return
