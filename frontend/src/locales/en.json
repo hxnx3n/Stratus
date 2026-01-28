@@ -1,0 +1,43 @@
+{
+  "nav": {
+    "my_files": "My Files",
+    "trash": "Trash",
+    "settings": "Settings",
+    "admin": "Admin"
+  },
+  "layout": {
+    "storage": "Storage",
+    "in_use": "in use",
+    "logout": "Logout"
+  },
+  "trash": {
+    "title": "Trash",
+    "empty_button": "Empty Trash",
+    "empty_message": "Trash is empty",
+    "warning_message": "Items in trash will be automatically deleted after 30 days.",
+    "table": {
+      "name": "Name",
+      "size": "Size",
+      "deleted": "Deleted"
+    },
+    "actions": {
+      "restore": "Restore",
+      "permanent_delete": "Permanent Delete",
+      "delete_permanently": "Delete Permanently"
+    },
+    "dialogs": {
+      "permanent_delete_title": "Permanent Delete",
+      "permanent_delete_message": "Are you sure you want to permanently delete \"{{name}}\"? This action cannot be undone.",
+      "empty_trash_title": "Empty Trash",
+      "empty_trash_message": "Are you sure you want to permanently delete all items in trash? This action cannot be undone.",
+      "delete_button": "Delete",
+      "empty_button": "Empty",
+      "cancel_button": "Cancel"
+    },
+    "errors": {
+      "restore_failed": "Restore failed",
+      "deletion_failed": "Deletion failed",
+      "empty_trash_failed": "Failed to empty trash"
+    }
+  }
+}
