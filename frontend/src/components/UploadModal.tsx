@@ -3,7 +3,7 @@ import { Upload, X } from 'lucide-react'
 import { useFileStore } from '../stores/fileStore'
 
 interface UploadModalProps {
-  parentId?: string
+  path?: string
   onClose: () => void
 }
 
@@ -14,7 +14,7 @@ interface UploadingFile {
   error?: string
 }
 
-export default function UploadModal({ parentId, onClose }: UploadModalProps) {
+export default function UploadModal({ path, onClose }: UploadModalProps) {
   const { uploadFile } = useFileStore()
   const [files, setFiles] = useState<UploadingFile[]>([])
   const [isDragging, setIsDragging] = useState(false)
@@ -67,7 +67,7 @@ export default function UploadModal({ parentId, onClose }: UploadModalProps) {
       )
 
       try {
-        await uploadFile(files[i].file, parentId, (progress) => {
+        await uploadFile(files[i].file, path, (progress) => {
           setFiles((prev) =>
             prev.map((f, idx) =>
               idx === i ? { ...f, progress } : f

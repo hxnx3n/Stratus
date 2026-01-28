@@ -21,6 +21,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: stratus-backend
+    ports:
+      - "8080:8080"
     environment:
       DATABASE_URL: postgres://stratus:stratus@postgres:5432/stratus?sslmode=disable
       SERVER_PORT: "8080"

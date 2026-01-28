@@ -29,15 +29,14 @@ func NewFileHandler(cfg *config.Config, storage *services.StorageService) *FileH
 }
 
 type FileListResponse struct {
-	Files           []models.File `json:"files"`
-	TotalCount      int64         `json:"total_count"`
-	Path            string        `json:"path"`
-	CurrentParentID *uuid.UUID    `json:"current_parent_id"`
+	Files      []models.File `json:"files"`
+	TotalCount int64         `json:"total_count"`
+	Path       string        `json:"path"`
 }
 
 type CreateFolderRequest struct {
-	Name     string     `json:"name" binding:"required"`
-	ParentID *uuid.UUID `json:"parent_id"`
+	Name string `json:"name" binding:"required"`
+	Path string `json:"path"`
 }
 
 func (h *FileHandler) List(c *gin.Context) {
@@ -45,41 +44,17 @@ func (h *FileHandler) List(c *gin.Context) {
 	path := c.DefaultQuery("path", "/")
 
 	var files []models.File
-	var currentParentID *uuid.UUID
-	query := database.DB.Where("owner_id = ? AND is_trashed = false", user.ID)
 
-	if path != "/" {
-		lastSlash := strings.LastIndex(path, "/")
-		var parentPath, folderName string
-		if lastSlash == 0 {
-			parentPath = "/"
-			folderName = path[1:]
-		} else {
-			parentPath = path[:lastSlash]
-			folderName = path[lastSlash+1:]
-		}
-
-		var parent models.File
-		if err := database.DB.Where("owner_id = ? AND path = ? AND name = ? AND is_directory = true", user.ID, parentPath, folderName).First(&parent).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Directory not found"})
-			return
-		}
-		currentParentID = &parent.ID
-		query = query.Where("parent_id = ?", parent.ID)
-	} else {
-		query = query.Where("parent_id IS NULL")
-	}
-
-	query.Order("is_directory DESC, name ASC").Find(&files)
+	database.DB.Where("owner_id = ? AND path = ? AND is_trashed = false", user.ID, path).
+		Order("is_directory DESC, name ASC").Find(&files)
 
 	var totalCount int64
 	database.DB.Model(&models.File{}).Where("owner_id = ? AND is_trashed = false", user.ID).Count(&totalCount)
 
 	c.JSON(http.StatusOK, gin.H{
-		"files":             files,
-		"total_count":       totalCount,
-		"path":              path,
-		"current_parent_id": currentParentID,
+		"files":       files,
+		"total_count": totalCount,
+		"path":        path,
 	})
 }
 
@@ -108,8 +83,21 @@ func (h *FileHandler) GetContents(c *gin.Context) {
 		return
 	}
 
+	var folder models.File
+	if err := database.DB.Where("id = ? AND owner_id = ? AND is_directory = true", folderID, user.ID).First(&folder).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Folder not found"})
+		return
+	}
+
+	var folderPath string
+	if folder.Path == "/" {
+		folderPath = "/" + folder.Name
+	} else {
+		folderPath = folder.Path + "/" + folder.Name
+	}
+
 	var files []models.File
-	if err := database.DB.Where("owner_id = ? AND parent_id = ? AND is_trashed = false", user.ID, folderID).
+	if err := database.DB.Where("owner_id = ? AND path = ? AND is_trashed = false", user.ID, folderPath).
 		Order("is_directory DESC, name ASC").
 		Find(&files).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch contents"})
@@ -139,7 +127,6 @@ func (h *FileHandler) Upload(c *gin.Context) {
 		return
 	}
 
-	var parentID *uuid.UUID
 	var parentPath string = "/"
 
 	parentIDStr := c.PostForm("parent_id")
@@ -147,7 +134,6 @@ func (h *FileHandler) Upload(c *gin.Context) {
 		if parsedID, err := uuid.Parse(parentIDStr); err == nil {
 			var parent models.File
 			if err := database.DB.Where("id = ? AND owner_id = ? AND is_directory = true", parsedID, user.ID).First(&parent).Error; err == nil {
-				parentID = &parent.ID
 				if parent.Path == "/" {
 					parentPath = "/" + parent.Name
 				} else {
@@ -164,11 +150,7 @@ func (h *FileHandler) Upload(c *gin.Context) {
 	}
 
 	var existingFile models.File
-	if parentID != nil {
-		err = database.DB.Where("owner_id = ? AND parent_id = ? AND name = ? AND is_trashed = false", user.ID, parentID, header.Filename).First(&existingFile).Error
-	} else {
-		err = database.DB.Where("owner_id = ? AND parent_id IS NULL AND name = ? AND is_trashed = false", user.ID, header.Filename).First(&existingFile).Error
-	}
+	err = database.DB.Where("owner_id = ? AND path = ? AND name = ? AND is_trashed = false", user.ID, parentPath, header.Filename).First(&existingFile).Error
 
 	if err == nil {
 		h.storage.CreateFileVersion(&existingFile)
@@ -190,7 +172,6 @@ func (h *FileHandler) Upload(c *gin.Context) {
 		MimeType:    h.storage.GetMimeType(header.Filename),
 		Size:        size,
 		IsDirectory: false,
-		ParentID:    parentID,
 		OwnerID:     user.ID,
 		Checksum:    checksum,
 	}
@@ -255,29 +236,13 @@ func (h *FileHandler) CreateFolder(c *gin.Context) {
 		return
 	}
 
-	var parentPath string = "/"
-	if req.ParentID != nil {
-		var parent models.File
-		if err := database.DB.Where("id = ? AND owner_id = ? AND is_directory = true", req.ParentID, user.ID).First(&parent).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Parent folder not found"})
-			return
-		}
-		if parent.Path == "/" {
-			parentPath = "/" + parent.Name
-		} else {
-			parentPath = parent.Path + "/" + parent.Name
-		}
+	parentPath := req.Path
+	if parentPath == "" {
+		parentPath = "/"
 	}
 
 	var existingFolder models.File
-	var folderErr error
-	if req.ParentID != nil {
-		folderErr = database.DB.Where("owner_id = ? AND parent_id = ? AND name = ? AND is_directory = true AND is_trashed = false", user.ID, req.ParentID, req.Name).First(&existingFolder).Error
-	} else {
-		folderErr = database.DB.Where("owner_id = ? AND parent_id IS NULL AND name = ? AND is_directory = true AND is_trashed = false", user.ID, req.Name).First(&existingFolder).Error
-	}
-
-	if folderErr == nil {
+	if err := database.DB.Where("owner_id = ? AND path = ? AND name = ? AND is_directory = true AND is_trashed = false", user.ID, parentPath, req.Name).First(&existingFolder).Error; err == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "Folder already exists"})
 		return
 	}
@@ -286,7 +251,6 @@ func (h *FileHandler) CreateFolder(c *gin.Context) {
 		Name:        req.Name,
 		Path:        parentPath,
 		IsDirectory: true,
-		ParentID:    req.ParentID,
 		OwnerID:     user.ID,
 		StoragePath: filepath.Join(user.ID.String(), uuid.New().String()),
 	}
@@ -344,7 +308,7 @@ func (h *FileHandler) Move(c *gin.Context) {
 	}
 
 	var req struct {
-		DestinationID *uuid.UUID `json:"destination_id"`
+		DestinationPath string `json:"destination_path"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -357,17 +321,11 @@ func (h *FileHandler) Move(c *gin.Context) {
 		return
 	}
 
-	var newPath string = "/"
-	if req.DestinationID != nil {
-		var dest models.File
-		if err := database.DB.Where("id = ? AND owner_id = ? AND is_directory = true", req.DestinationID, user.ID).First(&dest).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Destination folder not found"})
-			return
-		}
-		newPath = filepath.Join(dest.Path, dest.Name)
+	newPath := req.DestinationPath
+	if newPath == "" {
+		newPath = "/"
 	}
 
-	file.ParentID = req.DestinationID
 	file.Path = newPath
 	database.DB.Save(&file)
 
@@ -392,8 +350,8 @@ func (h *FileHandler) Copy(c *gin.Context) {
 	}
 
 	var req struct {
-		DestinationID *uuid.UUID `json:"destination_id"`
-		NewName       string     `json:"new_name"`
+		DestinationPath string `json:"destination_path"`
+		NewName         string `json:"new_name"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -411,14 +369,9 @@ func (h *FileHandler) Copy(c *gin.Context) {
 		return
 	}
 
-	var newPath string = "/"
-	if req.DestinationID != nil {
-		var dest models.File
-		if err := database.DB.Where("id = ? AND owner_id = ? AND is_directory = true", req.DestinationID, user.ID).First(&dest).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Destination folder not found"})
-			return
-		}
-		newPath = filepath.Join(dest.Path, dest.Name)
+	newPath := req.DestinationPath
+	if newPath == "" {
+		newPath = "/"
 	}
 
 	newStoragePath := filepath.Join(h.storage.GetUserStoragePath(user.ID), uuid.New().String()+filepath.Ext(file.Name))
@@ -439,7 +392,6 @@ func (h *FileHandler) Copy(c *gin.Context) {
 		MimeType:    file.MimeType,
 		Size:        file.Size,
 		IsDirectory: false,
-		ParentID:    req.DestinationID,
 		OwnerID:     user.ID,
 		Checksum:    file.Checksum,
 	}

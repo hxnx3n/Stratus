@@ -74,8 +74,10 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 	}
 
 	webdav := r.Group("/webdav")
-	webdav.Use(middleware.AuthMiddleware(cfg))
+	webdav.Use(middleware.BasicAuthMiddleware(cfg))
 	{
+		webdav.Handle("OPTIONS", "", webdavHandler.Options)
+		webdav.Handle("PROPFIND", "", webdavHandler.Propfind)
 		webdav.Handle("OPTIONS", "/*path", webdavHandler.Options)
 		webdav.Handle("PROPFIND", "/*path", webdavHandler.Propfind)
 		webdav.GET("/*path", webdavHandler.Get)
@@ -85,5 +87,7 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 		webdav.Handle("MOVE", "/*path", webdavHandler.Move)
 		webdav.Handle("COPY", "/*path", webdavHandler.Copy)
 		webdav.HEAD("/*path", webdavHandler.Head)
+		webdav.Handle("LOCK", "/*path", webdavHandler.Lock)
+		webdav.Handle("UNLOCK", "/*path", webdavHandler.Unlock)
 	}
 }

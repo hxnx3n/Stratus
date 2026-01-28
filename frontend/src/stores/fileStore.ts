@@ -14,7 +14,6 @@ export interface FileItem {
   size: number
   mime_type: string
   is_directory: boolean
-  parent_id: string | null
   created_at: string
   updated_at: string
 }
@@ -22,13 +21,12 @@ export interface FileItem {
 interface FileState {
   files: FileItem[]
   currentPath: string
-  currentParentId: string | null
   selectedFiles: Set<string>
   loading: boolean
   error: string | null
   fetchFiles: (path?: string) => Promise<void>
-  createFolder: (name: string, parentId?: string) => Promise<void>
-  uploadFile: (file: File, parentId?: string, onProgress?: (progress: number) => void) => Promise<void>
+  createFolder: (name: string, path?: string) => Promise<void>
+  uploadFile: (file: File, path?: string, onProgress?: (progress: number) => void) => Promise<void>
   deleteFile: (id: string) => Promise<void>
   moveToTrash: (id: string) => Promise<void>
   restoreFromTrash: (id: string) => Promise<void>
@@ -42,7 +40,6 @@ interface FileState {
 export const useFileStore = create<FileState>((set, get) => ({
   files: [],
   currentPath: '/',
-  currentParentId: null,
   selectedFiles: new Set(),
   loading: false,
   error: null,
@@ -53,8 +50,7 @@ export const useFileStore = create<FileState>((set, get) => ({
       const response = await api.get('/api/files', { params: { path } })
       set({ 
         files: response.data.files || [], 
-        currentPath: path,
-        currentParentId: response.data.current_parent_id || null
+        currentPath: path
       })
     } catch (error) {
       const axiosError = error as AxiosError<ApiError>
@@ -64,9 +60,9 @@ export const useFileStore = create<FileState>((set, get) => ({
     }
   },
 
-  createFolder: async (name: string, parentId?: string) => {
+  createFolder: async (name: string, path?: string) => {
     try {
-      await api.post('/api/files/folder', { name, parent_id: parentId })
+      await api.post('/api/files/folder', { name, path: path || get().currentPath })
       await get().fetchFiles(get().currentPath)
     } catch (error) {
       const axiosError = error as AxiosError<ApiError>
@@ -74,12 +70,10 @@ export const useFileStore = create<FileState>((set, get) => ({
     }
   },
 
-  uploadFile: async (file: File, parentId?: string, onProgress?: (progress: number) => void) => {
+  uploadFile: async (file: File, path?: string, onProgress?: (progress: number) => void) => {
     const formData = new FormData()
     formData.append('file', file)
-    if (parentId) {
-      formData.append('parent_id', parentId)
-    }
+    formData.append('path', path || get().currentPath)
 
     try {
       await api.post('/api/files/upload', formData, {

@@ -1,12 +1,14 @@
 package middleware
 
 import (
+	"encoding/base64"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 
 	"stratus/config"
 	"stratus/database"
@@ -90,4 +92,75 @@ func GetCurrentUser(c *gin.Context) *models.User {
 		return nil
 	}
 	return user.(*models.User)
+}
+
+func BasicAuthMiddleware(cfg *config.Config) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.Header("WWW-Authenticate", `Basic realm="WebDAV"`)
+			c.Status(http.StatusUnauthorized)
+			c.Abort()
+			return
+		}
+
+		const basicAuthPrefix = "Basic "
+		if !strings.HasPrefix(authHeader, basicAuthPrefix) {
+			c.Header("WWW-Authenticate", `Basic realm="WebDAV"`)
+			c.Status(http.StatusUnauthorized)
+			c.Abort()
+			return
+		}
+
+		payload, err := base64.StdEncoding.DecodeString(authHeader[len(basicAuthPrefix):])
+		if err != nil {
+			c.Header("WWW-Authenticate", `Basic realm="WebDAV"`)
+			c.Status(http.StatusUnauthorized)
+			c.Abort()
+			return
+		}
+
+		pair := strings.SplitN(string(payload), ":", 2)
+		if len(pair) != 2 {
+			c.Header("WWW-Authenticate", `Basic realm="WebDAV"`)
+			c.Status(http.StatusUnauthorized)
+			c.Abort()
+			return
+		}
+
+		username := pair[0]
+		password := pair[1]
+
+		var user models.User
+		if err := database.DB.Where("email = ?", username).First(&user).Error; err != nil {
+			if err := database.DB.Where("username = ?", username).First(&user).Error; err != nil {
+				c.Header("WWW-Authenticate", `Basic realm="WebDAV"`)
+				c.Status(http.StatusUnauthorized)
+				c.Abort()
+				return
+			}
+		}
+
+		if !VerifyPassword(user.PasswordHash, password) {
+			c.Header("WWW-Authenticate", `Basic realm="WebDAV"`)
+			c.Status(http.StatusUnauthorized)
+			c.Abort()
+			return
+		}
+
+		if !user.IsActive {
+			c.Status(http.StatusForbidden)
+			c.Abort()
+			return
+		}
+
+		c.Set("user", &user)
+		c.Set("userID", user.ID)
+		c.Next()
+	}
+}
+
+func VerifyPassword(hash, password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }

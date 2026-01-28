@@ -15,7 +15,7 @@ import {
 export default function Files() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { files, loading, fetchFiles, createFolder, currentPath, currentParentId } = useFileStore()
+  const { files, loading, fetchFiles, createFolder, currentPath } = useFileStore()
   const [showUpload, setShowUpload] = useState(false)
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
@@ -37,7 +37,7 @@ export default function Files() {
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return
     try {
-      await createFolder(newFolderName, currentParentId ?? undefined)
+      await createFolder(newFolderName, currentPath)
       setNewFolderName('')
       setShowNewFolder(false)
     } catch (error) {
@@ -134,7 +134,7 @@ export default function Files() {
 
       {showUpload && (
         <UploadModal
-          parentId={currentParentId ?? undefined}
+          path={currentPath}
           onClose={() => setShowUpload(false)}
         />
       )}
